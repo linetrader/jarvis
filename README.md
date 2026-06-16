@@ -174,7 +174,7 @@ claude-harness-kit/
 ├── install.sh                        # 대화형 설치 스크립트
 ├── harness-kit.conf                  # 설정 파일 (install.sh가 생성)
 ├── agents/
-│   ├── root/                         # 루트 오케스트레이션 에이전트 10개
+│   ├── jarvis/                       # 루트 오케스트레이션 에이전트 10개
 │   └── project/                      # 프로젝트 공통 에이전트 10개
 ├── templates/
 │   ├── CLAUDE.root.md.template       # 루트 CLAUDE.md 뼈대

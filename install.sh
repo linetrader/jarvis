@@ -127,7 +127,7 @@ sub() {
 }
 
 # 루트 에이전트 복사 + 플레이스홀더 치환
-for src in "$KIT_DIR/agents/root/"*.md; do
+for src in "$KIT_DIR/agents/jarvis/"*.md; do
     fname="$(basename "$src")"
     dest="$TARGET_DIR/.claude/agents/$fname"
     # 플레이스홀더 치환
