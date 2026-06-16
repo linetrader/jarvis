@@ -1,0 +1,55 @@
+#!/bin/bash
+# usercheck.sh — 사용자 데이터 통합 조회 (읽기전용)
+# 사용: usercheck.sh <brand> <email|userId>
+#
+# ⚙️ 이 파일은 프로젝트 도메인에 맞게 전면 수정이 필요합니다.
+# ⚙️ 아래는 exchange(사용자 DB) + core(주문/잔고 DB) 구조를 가진 경우의 예시입니다.
+set -uo pipefail
+
+BRAND="${1:-}"; ID="${2:-}"
+if [ -z "$BRAND" ] || [ -z "$ID" ]; then
+  echo "usage: usercheck.sh <brand> <email|userId>"
+  exit 2
+fi
+
+# ⚙️ 브랜드별 DB URL과 tenant ID를 여기에 설정하세요
+case "$BRAND" in
+  brand_a) BRAND_URL="postgresql://USER:PASSWORD@HOST:PORT/DBNAME"; TENANT_ID="your-tenant-id-a" ;;
+  brand_b) BRAND_URL="postgresql://USER:PASSWORD@HOST:PORT/DBNAME"; TENANT_ID="your-tenant-id-b" ;;
+  *) echo "REJECTED: unknown brand $BRAND"; exit 3 ;;
+esac
+
+# ⚙️ 핵심 서비스 DB URL
+CORE_DB_URL="postgresql://USER:PASSWORD@HOST:PORT/DBNAME"
+
+esc() { printf '%s' "$1" | sed "s/'/''/g"; }
+
+# 1) 이메일 → userId 조회
+if [[ "$ID" == *@* ]]; then
+  EMAIL="$(esc "$ID")"
+  echo "### 회원 조회 ($BRAND)"
+  # ⚙️ 사용자 테이블 이름과 컬럼명을 실제 스키마에 맞게 수정하세요
+  OUT="$(printf "BEGIN TRANSACTION READ ONLY;\nSELECT id, email, \"createdAt\" FROM \"User\" WHERE email='%s' LIMIT 1;\nROLLBACK;\n" "$EMAIL" | psql "$BRAND_URL" 2>&1)"
+  echo "$OUT"
+  USERID="$(printf '%s' "$OUT" | awk '/^[-+ ]+$/{f=1;next} f && NF { if($1!~/^\(/ && $1!="ROLLBACK"){print $1; exit} }')"
+else
+  USERID="$ID"
+  echo "### userId 직접: $ID"
+fi
+
+if [ -z "${USERID:-}" ]; then
+  echo "→ 해당 계정을 찾지 못했습니다 ($BRAND)."
+  exit 0
+fi
+U="$(esc "$USERID")"
+
+# 2) 핵심 서비스 DB에서 데이터 조회
+# ⚙️ 아래 쿼리를 실제 스키마(테이블명/컬럼명)에 맞게 수정하세요
+
+echo; echo "### 최근 주문 (최대 10)"
+printf "BEGIN TRANSACTION READ ONLY;\nSET LOCAL statement_timeout=8000;\nSELECT id, status, \"createdAt\" FROM \"Order\" WHERE \"userId\"='%s' AND \"tenantId\"='%s' ORDER BY \"createdAt\" DESC LIMIT 10;\nROLLBACK;\n" \
+  "$U" "$TENANT_ID" | psql "$CORE_DB_URL" 2>&1
+
+echo; echo "### 잔고"
+printf "BEGIN TRANSACTION READ ONLY;\nSELECT currency, balance FROM \"Balance\" WHERE \"userId\"='%s' AND \"tenantId\"='%s';\nROLLBACK;\n" \
+  "$U" "$TENANT_ID" | psql "$CORE_DB_URL" 2>&1

@@ -1,0 +1,40 @@
+{
+  "botToken": "PASTE_YOUR_BOT_TOKEN_HERE",
+  "botName": "your-bot-name",
+  "adminChatIds": [
+    123456789
+  ],
+  "testerGroupIds": [
+    -1001234567890
+  ],
+  "groupBrands": {
+    "-1001234567890": "your-brand"
+  },
+  "triageAllGroupText": false,
+  "pollTimeoutSec": 30,
+  "taskTimeoutSec": 1800,
+  "triageCmdBase": "claude -p --model haiku --output-format text",
+  "fixCmd": "claude -p --model sonnet --permission-mode acceptEdits --output-format text",
+  "deployCmd": "claude -p --model sonnet --permission-mode acceptEdits --allowedTools Read Grep Glob 'Bash(git:*)' --output-format text",
+  "adminTaskCmd": "claude -p --model sonnet --permission-mode bypassPermissions --output-format text",
+  "projects": {
+    "project_a": {
+      "mode": "fix",
+      "repoDir": "project_a",
+      "dbq": ".telegram-bot/dbq.sh project_a",
+      "redisq": ".telegram-bot/redisq.sh project_a",
+      "schemaHint": "prisma/schema/로 교체하세요 (모델명 힌트)",
+      "areaHint": "서비스 영역 힌트 (어떤 서비스/모듈이 있는지)",
+      "deploy": { "branch": "main", "remote": "origin", "statusCmd": "echo '배포 상태 확인 명령'" }
+    },
+    "project_b": {
+      "mode": "fix",
+      "repoDir": "project_b",
+      "dbq": ".telegram-bot/dbq.sh project_b",
+      "redisq": ".telegram-bot/redisq.sh project_b",
+      "schemaHint": "prisma/schema/로 교체하세요",
+      "areaHint": "서비스 영역 힌트",
+      "deploy": { "branch": "main", "remote": "origin", "statusCmd": "echo '배포 상태 확인 명령'" }
+    }
+  }
+}

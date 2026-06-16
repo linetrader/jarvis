@@ -1,0 +1,115 @@
+# {{THIS_PROJECT}}
+
+> ⚙️ 프로젝트 한 줄 설명을 여기에 작성하세요.
+
+## 아키텍처
+
+```
+⚙️ 서비스 구조 다이어그램을 여기에 작성하세요.
+
+클라이언트 → api-gateway(:PORT) → 핵심 서비스 → DB / 캐시
+```
+
+## 코드 트리
+
+> ⚙️ 실제 디렉토리 구조로 수정하세요.
+
+```
+apps/api-gateway/      — API 게이트웨이
+apps/web/              — 프론트엔드 (Next.js 등)
+apps/worker/           — 백그라운드 워커
+scripts/               — 운영 스크립트
+start.sh / stop.sh     — 프로세스 관리
+```
+
+## 절대 규칙 (전역)
+
+- **응답 언어**: 항상 한국어로 응답한다.
+- **금액/측정값은 Decimal 전용** — 부동소수점 직접 연산 금지
+- **운영 DB 직접 SQL 변경 금지** — `SELECT` read-only만 자유
+- **Git 히스토리 작업은 마스터(사용자) 전용** — `commit`/`push` 등은 `deploy-manager` 에이전트만
+- **Prisma 마이그레이션은 `db-expert` 전용** (또는 마스터 전용 — CLAUDE.md에서 결정)
+- **⚙️ 추가 절대 규칙을 여기에 작성하세요**
+
+## 모델 사용 전략 (토큰 절감)
+
+| Tier | 모델 | 트리거 | 예시 |
+|---|---|---|---|
+| T1 | haiku | 스크립트화 가능, 정답 고정 | 로그 grep, 타입체크, 파일 찾기, import 정리 |
+| T2 | sonnet | 단일 영역 코드 읽기/수정 | 버그 수정, UI 변경, 스키마 필드 추가 |
+| T3 | opus | 도메인 로직·보안·멀티시스템·설계 | 경쟁 조건 설계, 근본원인 불명 버그 추적 |
+
+### 위임 원칙
+
+1. **단순 작업 → `routine-tasks`(haiku) 우선**: grep/로그/타입체크는 직접 실행 말고 haiku에 위임
+2. **독립 작업 병렬 호출**: 복수 Agent 동시 디스패치로 컨텍스트 절감
+3. **코드 작성은 sonnet, 검증은 opus**: `domain-expert`는 diff 리뷰 전담 — 코드 수정 안 함
+
+## 에이전트 팀 (`.claude/agents/`)
+
+> ⚙️ 프로젝트 실제 에이전트 목록으로 수정하세요.
+
+| 에이전트 | 모델 | 담당 |
+|---|---|---|
+| `pm` | sonnet | 제품 기획·기능 우선순위·PRD |
+| `product-planner` | sonnet | FRD·화면 기획·플로우·엣지 케이스 정의 |
+| `ui-ux-designer` | sonnet | 디자인 시스템·UX 플로우·레이아웃 스펙 |
+| `growth-pm` | sonnet | 성장 전략·온보딩·리텐션·KPI |
+| `domain-expert` | **opus** | 도메인 로직 리뷰 전용 (코드 수정 안 함) |
+| `qa-lead` | sonnet | 테스트 시나리오·리그레션·배포 판단 |
+| `deploy-manager` | sonnet | git add·commit·push·배포 상태 체크 |
+| `routine-tasks` | **haiku** | 타입체크·로그 스캔·탐색·포맷 등 반복 작업 |
+| `code-compliance-checker` | **haiku** | CLAUDE.md 규칙 위반·문서-코드 일치 검사 |
+| `doc-keeper` | **haiku** | 코드 변경 후 문서 자동 동기화 |
+
+### 호출 가이드
+
+- **1개 파일 고치기** → 해당 sonnet 전문가 직접 호출
+- **여러 영역 교차** → 메인이 조율, 각 sonnet 에이전트 병렬 디스패치
+- **"이 함수 어디 쓰나", "타입 에러 있나", "로그 스캔"** → `routine-tasks` (haiku)
+- **도메인 핵심 로직 변경** → sonnet이 먼저 코드 작성 → `domain-expert` (opus)에 diff만 전달
+- **UI 비주얼/레이아웃/테마** → `ui-ux-designer` (상태·로직은 담당 엔지니어로 분리)
+
+## 공통 실행 명령
+
+```bash
+./start.sh    # 서비스 기동
+./stop.sh     # 서비스 종료
+npm run dev   # 개발 모드 (해당 시)
+npm test      # 테스트 실행 (해당 시)
+```
+
+## 크로스 프로젝트 변경
+
+다른 프로젝트 직접 수정 금지. 루트(`{{ROOT_PROJECT}}`) orchestration으로 처리.
+
+## 환경 변수 (공통)
+
+> ⚙️ 실제 환경변수 목록으로 수정하세요.
+
+```
+DATABASE_URL        — 주 DB 연결 문자열
+REDIS_URL           — Redis 연결 문자열
+PROJECT_A_URL       — 코어 서비스 URL
+API_KEY / SECRET    — 서비스 간 인증
+```
+
+---
+
+## Harness Engineering
+
+**원칙**: Test-Harness First · Encapsulation · Observability · Validation
+
+에이전트 3단계 작업:
+1. `tests/harness/<기능명>/` — Mock(DB·외부 API·캐시), 입력, 기대값 정의
+2. `src/core/`(순수 로직) + `src/infra/`(실 의존성) 분리, 의존성 주입 인터페이스 추출
+3. 하네스 실행 로그 + diff 제출 → `qa-lead` 승인 후 커밋
+
+```
+apps/[앱명]/src/{core/, infra/, index.ts}
+apps/[앱명]/tests/harness/{mocks/, fixtures/, [기능명].test.ts}
+```
+
+> **예외**: `apps/web/`(UI) — E2E(Playwright 등)로 검증, harness 구조 미적용
+
+**토큰 절감**: Mock 1회 통과 → 외부 API 0호출 · qa-lead 로그만 검토.

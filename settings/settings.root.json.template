@@ -1,0 +1,26 @@
+{
+  "model": "sonnet",
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(date:*)",
+      "Bash(lsof:*)",
+      "Bash(redis-cli:*)",
+      "Bash(tail:*)",
+      "Bash(pgrep:*)"
+    ]
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd {{ROOT_PATH}} && bash scripts/sync-harness-docs.sh --drift 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}

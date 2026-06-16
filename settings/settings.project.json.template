@@ -1,0 +1,16 @@
+{
+  "model": "sonnet",
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $(git rev-parse --show-toplevel)/sync-harness-docs.sh --drift 2>/dev/null || true"
+          }
+        ]
+      }
+    ]
+  }
+}
