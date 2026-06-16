@@ -9,7 +9,7 @@
 #   git clone https://github.com/linetrader/jarvis
 #   cd your-project && bash ../jarvis/install.sh
 
-set -euo pipefail
+set -eo pipefail
 
 # 색상 출력
 GREEN=$'\033[0;32m'; YELLOW=$'\033[1;33m'; CYAN=$'\033[0;36m'; RED=$'\033[0;31m'; RESET=$'\033[0m'
@@ -65,20 +65,21 @@ fi
 
 # ── 질문 3: 테스트 명령 ──────────────────────────────────────────
 heading "3/5  테스트 명령"
-declare -A TEST_CMDS
+# bash 3 호환 (macOS 기본 bash): declare -A 대신 eval 동적 변수 사용
 
 if [[ ${#PROJECTS_ARRAY[@]} -eq 0 ]]; then
     prompt "테스트 명령 (예: npm test / pytest -q / cargo test)"
     read -r ROOT_TEST_CMD
     ROOT_TEST_CMD="${ROOT_TEST_CMD:-npm test}"
-    TEST_CMDS["root"]="$ROOT_TEST_CMD"
     ok "테스트 명령: $ROOT_TEST_CMD"
 else
     for proj in "${PROJECTS_ARRAY[@]}"; do
         prompt "$proj 테스트 명령 (기본값: npm test)"
         read -r test_cmd
-        TEST_CMDS["$proj"]="${test_cmd:-npm test}"
-        ok "$proj: ${TEST_CMDS[$proj]}"
+        _var="${proj//-/_}"
+        eval "_TESTCMD_${_var}=\"${test_cmd:-npm test}\""
+        eval "_val=\${_TESTCMD_${_var}}"
+        ok "$proj: $_val"
     done
 fi
 
@@ -89,7 +90,7 @@ read -r INSTALL_BOT
 INSTALL_BOT="${INSTALL_BOT:-n}"
 
 BOT_DIR_NAME=""
-if [[ "${INSTALL_BOT,,}" == "y" ]]; then
+if [[ "$(echo "$INSTALL_BOT" | tr '[:upper:]' '[:lower:]')" == "y" ]]; then
     prompt "봇 폴더 이름 (기본값: .telegram-bot)"
     read -r BOT_DIR_NAME
     BOT_DIR_NAME="${BOT_DIR_NAME:-.telegram-bot}"
@@ -198,33 +199,32 @@ mkdir -p "$TARGET_DIR/scripts"
 cp "$KIT_DIR/scripts/sync-harness-docs.sh" "$TARGET_DIR/scripts/"
 cp "$KIT_DIR/scripts/commit-docs.sh" "$TARGET_DIR/scripts/"
 cp "$KIT_DIR/scripts/sync-docs-helper.py" "$TARGET_DIR/scripts/"
+cp "$KIT_DIR/scripts/generate-docs.sh" "$TARGET_DIR/scripts/"
 chmod +x "$TARGET_DIR/scripts/sync-harness-docs.sh"
 chmod +x "$TARGET_DIR/scripts/commit-docs.sh"
-ok "스크립트 3개 설치"
+chmod +x "$TARGET_DIR/scripts/generate-docs.sh"
+ok "스크립트 4개 설치"
 
 # ── harness-kit.conf 생성 ─────────────────────────────────────
 info "harness-kit.conf 생성..."
 {
     echo "# harness-kit.conf — 자동 생성됨 ($ROOT_PROJECT)"
     echo ""
-    if [[ ${#PROJECTS_ARRAY[@]} -eq 0 ]]; then
-        echo "PROJECTS=()"
-    else
-        echo "PROJECTS=(${PROJECTS_ARRAY[*]/#/\"} )"
-        # 따옴표 수정
-        printf 'PROJECTS=(' > /dev/null
-    fi
-    echo ""
-    # PROJECTS 배열 올바르게 출력
+    # PROJECTS 배열 출력 (bash 3 호환)
     printf 'PROJECTS=('
     for p in "${PROJECTS_ARRAY[@]}"; do
         printf '"%s" ' "$p"
     done
     printf ')\n'
     echo ""
+    if [[ ${#PROJECTS_ARRAY[@]} -eq 0 ]]; then
+        echo "ROOT_TEST_CMD=\"${ROOT_TEST_CMD:-npm test}\""
+    fi
+    echo ""
     for proj in "${PROJECTS_ARRAY[@]}"; do
         var="${proj//-/_}"
-        echo "TEST_CMD_${var}=\"${TEST_CMDS[$proj]:-npm test}\""
+        eval "_cmd=\${_TESTCMD_${var}:-npm test}"
+        echo "TEST_CMD_${var}=\"$_cmd\""
     done
     echo ""
     echo "PORT_CHECKS=("
@@ -232,6 +232,86 @@ info "harness-kit.conf 생성..."
     echo ")"
 } > "$TARGET_DIR/harness-kit.conf"
 ok "harness-kit.conf 생성"
+
+# ── docs/ 폴더 기본 구조 생성 ────────────────────────────────
+info "docs/ 기본 구조 생성..."
+if [[ ${#PROJECTS_ARRAY[@]} -eq 0 ]]; then
+    # 단일 프로젝트 모드: 루트에 전체 docs/ 구조 생성
+    mkdir -p "$TARGET_DIR/docs/specs"
+    mkdir -p "$TARGET_DIR/docs/design"
+    mkdir -p "$TARGET_DIR/docs/qa"
+    mkdir -p "$TARGET_DIR/docs/deployment"
+    mkdir -p "$TARGET_DIR/docs/ops"
+    printf '# %s 문서\n\n<!-- 에이전트 팀이 자동 생성한 문서 인덱스입니다 -->\n<!-- 생성: bash scripts/generate-docs.sh -->\n' \
+        "$ROOT_PROJECT" > "$TARGET_DIR/docs/README.md"
+    ok "docs/ 구조 생성 (단일 프로젝트 모드)"
+else
+    # 멀티프로젝트 모드: 각 서브프로젝트 + 루트 architecture/
+    for proj in "${PROJECTS_ARRAY[@]}"; do
+        mkdir -p "$TARGET_DIR/$proj/docs/specs"
+        mkdir -p "$TARGET_DIR/$proj/docs/design"
+        mkdir -p "$TARGET_DIR/$proj/docs/qa"
+        mkdir -p "$TARGET_DIR/$proj/docs/deployment"
+        mkdir -p "$TARGET_DIR/$proj/docs/ops"
+        printf '# %s 문서\n\n<!-- 에이전트 팀이 자동 생성한 문서 인덱스입니다 -->\n<!-- 생성: bash scripts/generate-docs.sh %s -->\n' \
+            "$proj" "$proj" > "$TARGET_DIR/$proj/docs/README.md"
+    done
+    mkdir -p "$TARGET_DIR/docs/architecture"
+    printf '# %s 전체 아키텍처 문서\n\n<!-- 에이전트 팀이 자동 생성한 문서 인덱스입니다 -->\n<!-- 생성: bash scripts/generate-docs.sh -->\n' \
+        "$ROOT_PROJECT" > "$TARGET_DIR/docs/README.md"
+    ok "docs/ 구조 생성 (서브프로젝트 ${#PROJECTS_ARRAY[@]}개 + 루트 architecture/)"
+fi
+
+# ── tests/ 폴더 스캐폴드 생성 ────────────────────────────────
+# 테스트 커맨드에서 언어·프레임워크를 추론해 적합한 폴더 + 샘플 파일 생성
+# bash 3 호환: ${var,,} 금지 → tr 사용
+_create_test_scaffold() {
+    local dir="$1" test_cmd="$2"
+    local cmd_lower
+    cmd_lower=$(echo "$test_cmd" | tr '[:upper:]' '[:lower:]')
+
+    if echo "$cmd_lower" | grep -qE "pytest|python -m pytest|python3 -m pytest"; then
+        mkdir -p "$dir/tests"
+        [ ! -f "$dir/tests/__init__.py" ] && printf '' > "$dir/tests/__init__.py"
+        if [ ! -f "$dir/tests/test_sample.py" ]; then
+            printf '# sample test — 실제 테스트로 교체하세요\n\ndef test_placeholder():\n    assert True\n' \
+                > "$dir/tests/test_sample.py"
+        fi
+    elif echo "$cmd_lower" | grep -qE "cargo test|cargo nextest"; then
+        mkdir -p "$dir/tests"
+        if [ ! -f "$dir/tests/integration_test.rs" ]; then
+            printf '// integration test — 실제 테스트로 교체하세요\n#[test]\nfn placeholder() {\n    assert!(true);\n}\n' \
+                > "$dir/tests/integration_test.rs"
+        fi
+    elif echo "$cmd_lower" | grep -qE "go test"; then
+        # Go: 테스트는 소스와 같은 패키지에 위치 (tests/ 는 통합 테스트용)
+        mkdir -p "$dir/tests"
+        [ ! -f "$dir/tests/.gitkeep" ] && printf '' > "$dir/tests/.gitkeep"
+    elif echo "$cmd_lower" | grep -qE "jest|vitest|npm|pnpm|yarn|bun"; then
+        mkdir -p "$dir/__tests__"
+        if [ ! -f "$dir/__tests__/sample.test.js" ]; then
+            printf '// sample test — 실제 테스트로 교체하세요\ndescribe("placeholder", () => {\n  it("passes", () => {\n    expect(true).toBe(true);\n  });\n});\n' \
+                > "$dir/__tests__/sample.test.js"
+        fi
+    else
+        # 기타(rspec, mocha, pytest 변형 등): 범용 tests/
+        mkdir -p "$dir/tests"
+        [ ! -f "$dir/tests/.gitkeep" ] && printf '' > "$dir/tests/.gitkeep"
+    fi
+}
+
+info "tests/ 스캐폴드 생성..."
+if [[ ${#PROJECTS_ARRAY[@]} -eq 0 ]]; then
+    _create_test_scaffold "$TARGET_DIR" "$ROOT_TEST_CMD"
+    ok "tests/ 스캐폴드 생성 (단일 프로젝트 모드)"
+else
+    for proj in "${PROJECTS_ARRAY[@]}"; do
+        _var="${proj//-/_}"
+        eval "_cmd=\${_TESTCMD_${_var}:-npm test}"
+        _create_test_scaffold "$TARGET_DIR/$proj" "$_cmd"
+    done
+    ok "tests/ 스캐폴드 생성 (서브프로젝트 ${#PROJECTS_ARRAY[@]}개)"
+fi
 
 # ── temp/ 폴더 + .gitignore ──────────────────────────────────
 mkdir -p "$TARGET_DIR/temp"
@@ -252,7 +332,8 @@ fi
 if [[ -n "$BOT_DIR_NAME" ]]; then
     info "텔레그램 봇 설치 ($BOT_DIR_NAME/)..."
     mkdir -p "$TARGET_DIR/$BOT_DIR_NAME"
-    cp "$KIT_DIR/telegram-bot/bot.mjs" "$TARGET_DIR/$BOT_DIR_NAME/"
+    # 컴파일된 JS 복사 (고객은 node dist/bot.js 로 바로 실행)
+    cp "$KIT_DIR/telegram-bot/dist/bot.js" "$TARGET_DIR/$BOT_DIR_NAME/"
     cp "$KIT_DIR/telegram-bot/config.example.json" "$TARGET_DIR/$BOT_DIR_NAME/"
     cp "$KIT_DIR/telegram-bot/dbq.sh.template" "$TARGET_DIR/$BOT_DIR_NAME/dbq.sh"
     cp "$KIT_DIR/telegram-bot/redisq.sh.template" "$TARGET_DIR/$BOT_DIR_NAME/redisq.sh"
@@ -260,7 +341,20 @@ if [[ -n "$BOT_DIR_NAME" ]]; then
     chmod +x "$TARGET_DIR/$BOT_DIR_NAME/dbq.sh"
     chmod +x "$TARGET_DIR/$BOT_DIR_NAME/redisq.sh"
     chmod +x "$TARGET_DIR/$BOT_DIR_NAME/usercheck.sh"
-    ok "텔레그램 봇 파일 5개 설치"
+    ok "텔레그램 봇 파일 5개 설치 (dist/bot.js 포함)"
+fi
+
+# ── 초기 docs/ 문서 자동 생성 ────────────────────────────────
+echo ""
+if command -v claude >/dev/null 2>&1; then
+    info "초기 docs/ 문서 자동 생성 중... (claude 에이전트 팀 실행, 3~10분 소요)"
+    cd "$TARGET_DIR"
+    claude -p --permission-mode acceptEdits --output-format text \
+        "doc-generator 에이전트를 Agent 도구로 호출해 docs/ 전체를 생성해줘" 2>/dev/null \
+        && ok "초기 docs/ 문서 생성 완료" \
+        || warn "문서 자동 생성 실패 — 나중에 'bash scripts/generate-docs.sh' 실행"
+else
+    warn "claude CLI 없음 — 설치 후 'bash scripts/generate-docs.sh' 로 문서를 생성하세요"
 fi
 
 # ── 완료 메시지 ─────────────────────────────────────────────────
@@ -276,13 +370,14 @@ echo ""
 echo "  1. ${YELLOW}CLAUDE.md${RESET} 열어서 ⚙️ 표시된 항목 수정"
 echo "  2. 각 에이전트 파일에서 ⚙️ 항목 커스터마이즈"
 echo "  3. ${YELLOW}harness-kit.conf${RESET} 에서 포트 드리프트 검사 항목 추가"
+echo "  4. 문서 재생성 필요 시: ${YELLOW}bash scripts/generate-docs.sh${RESET}"
 if [[ -n "$BOT_DIR_NAME" ]]; then
     echo ""
     echo "  📱 텔레그램 봇:"
     echo "     cp $BOT_DIR_NAME/config.example.json $BOT_DIR_NAME/config.json"
     echo "     → config.json 에 botToken, adminChatIds 등 입력"
     echo "     → dbq.sh, redisq.sh 에 실제 DB URL 입력"
-    echo "     node $BOT_DIR_NAME/bot.mjs"
+    echo "     node $BOT_DIR_NAME/bot.js"
 fi
 echo ""
 echo "  🔍 Claude Code에서 프로젝트 열기:"

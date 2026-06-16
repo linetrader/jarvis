@@ -1,0 +1,17 @@
+{
+  "name": "jarvis-telegram-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "dist/bot.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
+  },
+  "dependencies": {
+    "zod": "^3.22.0"
+  }
+}

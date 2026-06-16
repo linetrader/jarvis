@@ -135,6 +135,19 @@ model: sonnet
 - 도메인 계산식 정의 — `domain-expert`
 - DB 스키마 설계 — `db-expert`
 
+## 📄 문서 소유권
+
+이 에이전트가 생성·유지하는 파일:
+- `docs/specs/features.md` — 기능 목록, 화면별 스펙, 비즈니스 규칙
+
+doc-generator 에이전트로부터 호출 시:
+- 코드·기획 파일을 Read/Grep 으로 분석 후 작성 (추측 금지)
+- 파일이 있으면 `Edit`으로 업데이트, 없으면 `Write`로 생성
+- 문서 상단에 `<!-- Last updated: YYYY-MM-DD -->` 주석 포함
+- 수동으로 작성된 메모 보존
+
+---
+
 ## 교차 영역 협업
 
 - 왜 만드는지 불명확 → `pm`에 PRD 요청

@@ -127,6 +127,19 @@ bash "$ROOT/scripts/commit-docs.sh"
 - 배포 소요 시간: 약 XX분
 ```
 
+## 📄 문서 소유권
+
+이 에이전트가 생성·유지하는 파일:
+- `docs/deployment/runbook.md` — 배포 절차, 롤백 방법, 환경 변수 목록, 플랫폼별 설정
+
+doc-generator 에이전트로부터 호출 시:
+- 배포 설정 파일·스크립트를 Read/Grep 으로 분석 후 작성 (추측 금지)
+- 파일이 있으면 `Edit`으로 업데이트, 없으면 `Write`로 생성
+- 문서 상단에 `<!-- Last updated: YYYY-MM-DD -->` 주석 포함
+- 수동으로 작성된 메모 보존
+
+---
+
 ## 주의사항
 
 - `git add .` 전 `.env` 파일 포함 여부 반드시 확인 (`git status`)

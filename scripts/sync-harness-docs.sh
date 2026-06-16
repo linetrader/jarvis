@@ -7,7 +7,7 @@
 #   ./sync-harness-docs.sh --dry-run # 실행 없이 현재 케이스 수만 출력
 #   ./sync-harness-docs.sh --drift   # 드리프트 검사만 (테스트 실행 없음)
 
-set -euo pipefail
+set -eo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # harness-kit.conf 로드 (프로젝트별 설정)
@@ -186,7 +186,7 @@ check_agents() {
 }
 
 check_agents "$ROOT" "루트"
-for proj in "${PROJECTS[@]}"; do
+for proj in ${PROJECTS[@]+"${PROJECTS[@]}"}; do
     check_agents "$ROOT/$proj" "$proj"
 done
 
