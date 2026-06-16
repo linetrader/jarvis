@@ -1,1 +1,27 @@
-telegram-bot/node_modules/
+# ── Node.js ──────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── 런타임 산출물 ──────────────────────────────────────────
+telegram-bot/uploads/
+telegram-bot/config.json
+*.log
+*.pid
+
+# ── macOS ─────────────────────────────────────────────────────
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ── 환경 변수 ─────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── 에디터 ───────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
