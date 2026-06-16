@@ -1,4 +1,4 @@
-# claude-harness-kit
+# jarvis
 
 Claude Code 하네스 엔지니어링 시스템 + 팀 에이전트를 어느 프로젝트에도 이식할 수 있는 패키지.
 
@@ -15,11 +15,11 @@ Claude Code 하네스 엔지니어링 시스템 + 팀 에이전트를 어느 프
 
 ```bash
 # 1. 이 레포 클론
-git clone https://github.com/YOUR_ORG/claude-harness-kit
+git clone https://github.com/YOUR_ORG/jarvis
 
 # 2. 프로젝트 루트로 이동 후 설치
 cd your-project
-bash ../claude-harness-kit/install.sh
+bash ../jarvis/install.sh
 ```
 
 설치 마법사가 5가지를 물어봅니다:
@@ -170,7 +170,7 @@ node .telegram-bot/bot.mjs
 ## 파일 구조
 
 ```
-claude-harness-kit/
+jarvis/
 ├── install.sh                        # 대화형 설치 스크립트
 ├── harness-kit.conf                  # 설정 파일 (install.sh가 생성)
 ├── agents/

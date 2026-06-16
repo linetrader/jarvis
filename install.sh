@@ -1,13 +1,13 @@
 #!/bin/bash
-# install.sh — claude-harness-kit 대화형 설치 스크립트
+# install.sh — jarvis 대화형 설치 스크립트
 #
 # 사용법:
 #   cd /path/to/your-project
-#   bash /path/to/claude-harness-kit/install.sh
+#   bash /path/to/jarvis/install.sh
 #
 # 또는:
-#   git clone https://github.com/YOUR_ORG/claude-harness-kit
-#   cd your-project && bash ../claude-harness-kit/install.sh
+#   git clone https://github.com/linetrader/jarvis
+#   cd your-project && bash ../jarvis/install.sh
 
 set -euo pipefail
 
@@ -27,7 +27,7 @@ TARGET_DIR="${1:-$(pwd)}"
 
 echo ""
 echo "${GREEN}╔═══════════════════════════════════════╗${RESET}"
-echo "${GREEN}║     claude-harness-kit 설치 마법사     ║${RESET}"
+echo "${GREEN}║         jarvis 설치 마법사             ║${RESET}"
 echo "${GREEN}╚═══════════════════════════════════════╝${RESET}"
 echo ""
 echo "  설치 위치: ${CYAN}$TARGET_DIR${RESET}"
