@@ -117,6 +117,7 @@
 | `telegram-bot-expert` | sonnet | 텔레그램 QA 봇 장애 진단·config 수정·파이프라인 유지보수 |
 | `doc-keeper` | haiku | 코드 변경 직후 문서 자동 동기화 — 케이스 수·포트·에이전트 선언 드리프트 탐지 + 수정 |
 | `market-researcher` | sonnet | 경쟁사·시장 트렌드·규제 외부 리서치 전담 (WebSearch·WebFetch) |
+| `project-bootstrapper` | sonnet | 신규 프로젝트 자동 온보딩 — "[프로젝트명] 셋팅 시작해" 명령 시 에이전트 10개·CLAUDE.md 생성 + 루트 등록 |
 
 > 실제 프로젝트 내부 구현은 각 프로젝트의 전문 에이전트가 수행한다. 이 에이전트들은 **루트 경계 위에서만** 일한다.
 > 일반 흐름: **PM 분해 → mission-control 디스패치 → 프로젝트 처리 → QA Leader 검증**.
@@ -131,6 +132,17 @@
 | `status.md` | PM(`IN_PROGRESS`) / qa-lead(`QA_PASS`) / PM(`STATUS: READY`) | 단계별 상태 기록 |
 
 - `{{ROOT_PROJECT}}/temp/` 는 `.gitignore` 등록 (커밋 제외)
+
+## 등록된 서브프로젝트
+
+`project-bootstrapper`가 신규 프로젝트를 온보딩할 때마다 이 표에 행을 추가한다.
+pm·mission-control은 이 표를 기준으로 "어떤 프로젝트가 있는지" 확인한다.
+
+| 프로젝트 | 경로 | 기술 스택 | 역할 |
+|---|---|---|---|
+| {{PROJECT_A}} | {{PROJECT_A}}/ | ⚙️ 스택 | ⚙️ 역할 |
+| {{PROJECT_B}} | {{PROJECT_B}}/ | ⚙️ 스택 | ⚙️ 역할 |
+| {{PROJECT_C}} | {{PROJECT_C}}/ | ⚙️ 스택 | ⚙️ 역할 |
 
 ## 하위 프로젝트 문서
 
