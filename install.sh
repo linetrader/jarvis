@@ -220,28 +220,41 @@ for proj in "${PROJECTS_ARRAY[@]}"; do
         mkdir -p "$proj_dir"
     fi
 
-    info "$proj .claude/agents/ 생성..."
-    mkdir -p "$proj_dir/.claude/agents"
+    # ① 에이전트 — 기존 있으면 건너뜀
+    if [[ -d "$proj_dir/.claude/agents" ]] && ls "$proj_dir/.claude/agents/"*.md 2>/dev/null | grep -q .; then
+        cnt=$(ls "$proj_dir/.claude/agents/"*.md | wc -l | tr -d ' ')
+        warn "$proj 에이전트 ${cnt}개 이미 있음 — 건너뜀 (기존 보존)"
+        warn "  덮어쓰려면: rm -rf \"$proj_dir/.claude/agents\" 후 install.sh 재실행"
+    else
+        info "$proj .claude/agents/ 생성..."
+        mkdir -p "$proj_dir/.claude/agents"
+        for src in "$KIT_DIR/agents/project/"*.md; do
+            fname="$(basename "$src")"
+            sed -e "s/{{THIS_PROJECT}}/$proj/g" \
+                -e "s/{{ROOT_PROJECT}}/$ROOT_PROJECT/g" \
+                "$src" > "$proj_dir/.claude/agents/$fname"
+        done
+        ok "$proj 에이전트 $(ls "$proj_dir/.claude/agents/"*.md | wc -l | tr -d ' ')개 설치"
+    fi
 
-    # 프로젝트 에이전트 복사 + 치환
-    for src in "$KIT_DIR/agents/project/"*.md; do
-        fname="$(basename "$src")"
-        dest="$proj_dir/.claude/agents/$fname"
+    # ② CLAUDE.md — 기존 있으면 건너뜀
+    if [[ -f "$proj_dir/CLAUDE.md" ]]; then
+        warn "$proj/CLAUDE.md 이미 있음 — 건너뜀"
+    else
         sed -e "s/{{THIS_PROJECT}}/$proj/g" \
             -e "s/{{ROOT_PROJECT}}/$ROOT_PROJECT/g" \
-            "$src" > "$dest"
-    done
-    ok "$proj 에이전트 $(ls "$proj_dir/.claude/agents/"*.md | wc -l | tr -d ' ')개 설치"
+            "$KIT_DIR/templates/CLAUDE.project.md.template" > "$proj_dir/CLAUDE.md"
+        ok "$proj/CLAUDE.md 생성"
+    fi
 
-    # 프로젝트 CLAUDE.md 생성
-    sed -e "s/{{THIS_PROJECT}}/$proj/g" \
-        -e "s/{{ROOT_PROJECT}}/$ROOT_PROJECT/g" \
-        "$KIT_DIR/templates/CLAUDE.project.md.template" > "$proj_dir/CLAUDE.md"
-    ok "$proj/CLAUDE.md 생성"
-
-    # 프로젝트 settings.json 생성
-    cp "$KIT_DIR/settings/settings.project.json.template" "$proj_dir/.claude/settings.json"
-    ok "$proj/.claude/settings.json 생성"
+    # ③ settings.json — 기존 있으면 건너뜀
+    if [[ -f "$proj_dir/.claude/settings.json" ]]; then
+        warn "$proj/.claude/settings.json 이미 있음 — 건너뜀"
+    else
+        mkdir -p "$proj_dir/.claude"
+        cp "$KIT_DIR/settings/settings.project.json.template" "$proj_dir/.claude/settings.json"
+        ok "$proj/.claude/settings.json 생성"
+    fi
 done
 
 # ── scripts/ 설치 ─────────────────────────────────────────────

@@ -25,18 +25,25 @@ bootstrap [프로젝트명]
 
 ## 단계별 실행 절차
 
-### 0단계: 루트 경로 확인 및 프로젝트 경로 결정
+### 0단계: 루트 경로 확인 및 기존 설정 감지
 
 ```bash
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 PROJ_NAME="<사용자가 입력한 프로젝트명>"
 PROJ_DIR="$ROOT/$PROJ_NAME"
+mkdir -p "$PROJ_DIR/.claude/agents"
+
+# 기존 에이전트 파일 목록 확인
+existing=$(ls "$PROJ_DIR/.claude/agents/"*.md 2>/dev/null)
 ```
 
-프로젝트 디렉터리가 없으면 생성:
-```bash
-mkdir -p "$PROJ_DIR"
-```
+**기존 파일이 하나라도 있으면 → 업데이트 모드:**
+- 이미 존재하는 `.md` 파일은 **건드리지 않는다** (사용자 커스터마이제이션 보존)
+- 아래 10개 에이전트 목록 중 **파일이 없는 것만** Write 도구로 추가 생성
+- 완료 보고: "✅ 기존 에이전트 N개 보존 / M개 신규 추가"
+
+**기존 파일이 없으면 → 신규 모드 (기존 절차대로):**
+- 10개 에이전트 전부 Write 도구로 생성
 
 ### 1단계: 프로젝트 분석 (기술 스택 감지)
 
