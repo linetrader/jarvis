@@ -127,6 +127,56 @@ sub() {
     fi
 }
 
+# 동적 프로젝트 플레이스홀더 주입 (bash 3 호환, python3 사용)
+# CLAUDE.root.md.template의 {{PROJECTS_SUMMARY}}/{{ECOSYSTEM_TOPOLOGY}}/{{PROJECTS_TABLE}}/{{PROJECT_LINKS}} 치환
+_inject_projects_into_claude_md() {
+    local dest="$1"
+    local summary topology projects_table project_links p
+
+    if [[ ${#PROJECTS_ARRAY[@]} -eq 0 ]]; then
+        summary="단일 프로젝트"
+        topology="단일 프로젝트 — 서브프로젝트 없이 루트에서 모든 에이전트가 동작합니다."$'\n'"서브프로젝트 추가 시 project-bootstrapper 에이전트를 사용하세요."
+        projects_table="| (단일 프로젝트) | ./ | ⚙️ 기술 스택 | ⚙️ 역할 |"
+        project_links="(서브프로젝트 없음 — project-bootstrapper로 추가하세요)"
+    else
+        summary=""
+        for p in "${PROJECTS_ARRAY[@]}"; do
+            summary="${summary}\`${p}\`, "
+        done
+        summary="${summary%, }"
+
+        topology="⚙️ 프로젝트 구조에 맞게 다이어그램을 수정하세요."$'\n'
+        topology="${topology}"$'\n'"등록 프로젝트:"
+        for p in "${PROJECTS_ARRAY[@]}"; do
+            topology="${topology}"$'\n'"  ${p}/"
+        done
+
+        projects_table=""
+        for p in "${PROJECTS_ARRAY[@]}"; do
+            projects_table="${projects_table}| ${p} | ${p}/ | ⚙️ 스택 | ⚙️ 역할 |"$'\n'
+        done
+        projects_table="${projects_table%$'\n'}"
+
+        project_links=""
+        for p in "${PROJECTS_ARRAY[@]}"; do
+            project_links="${project_links}- [${p}/CLAUDE.md](${p}/CLAUDE.md)"$'\n'
+        done
+        project_links="${project_links%$'\n'}"
+    fi
+
+    python3 - "$dest" "$summary" "$topology" "$projects_table" "$project_links" << 'PYEOF'
+import sys
+dest = sys.argv[1]
+summary, topology, table, links = sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5]
+content = open(dest).read()
+content = content.replace('{{PROJECTS_SUMMARY}}', summary)
+content = content.replace('{{ECOSYSTEM_TOPOLOGY}}', topology)
+content = content.replace('{{PROJECTS_TABLE}}', table)
+content = content.replace('{{PROJECT_LINKS}}', links)
+open(dest, 'w').write(content)
+PYEOF
+}
+
 # 루트 에이전트 복사 + 플레이스홀더 치환
 for src in "$KIT_DIR/agents/jarvis/"*.md; do
     fname="$(basename "$src")"
@@ -153,6 +203,7 @@ sed -e "s/{{ROOT_PROJECT}}/$ROOT_PROJECT/g" \
     -e "s/{{PROJECT_B}}/$PROJ_B/g" \
     -e "s/{{PROJECT_C}}/$PROJ_C/g" \
     "$KIT_DIR/templates/CLAUDE.root.md.template" > "$TARGET_DIR/CLAUDE.md"
+_inject_projects_into_claude_md "$TARGET_DIR/CLAUDE.md"
 ok "CLAUDE.md 생성"
 
 # 루트 .claude/settings.json 생성

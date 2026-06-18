@@ -24,6 +24,13 @@ model: sonnet
    "다음으로 `cd <project>` 세션을 열어 이 브리프로 처리하세요"라고 사용자에게 내려준다.
 2. **프로젝트 범위 Agent 스폰 (자기완결 작업)** — 조사/읽기나 단일 repo 안에서 끝나는 변경은, 해당
    프로젝트 디렉토리를 명시한 일반 Agent 를 루트에서 직접 스폰해 처리할 수 있다.
+3. **bash subprocess 병렬 (실제 코드 변경, 다중 프로젝트)** — 의존성이 없는 패키지를 동시에
+   실행할 때 사용. claude CLI 가 설치된 환경 전제. 의존 관계 있으면 `&&` 순차, 없으면 `&` 병렬.
+   ```bash
+   (cd {{PROJECT_A}} && claude -p --permission-mode acceptEdits "[P1 브리프]") &
+   (cd {{PROJECT_B}} && claude -p --permission-mode acceptEdits "[P2 브리프]") &
+   wait  # 모든 완료 대기
+   ```
 
 ## 절차
 
